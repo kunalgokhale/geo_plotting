@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Map</title>
+  <meta name="viewport" content="initial-scale=1.0">
+  <meta charset="utf-8">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+  <style>
+  /* Optional: Makes the sample page fill the window. */
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+      /* Always set the map height explicitly to define the size of the div
+      * element that contains the map. */
+      #map {
+        height: 100%;
+        width: 50%;
+        display: inline-block;
+      }
+      #output {
+        display: inline-block;
+        vertical-align: top;
+        margin: 20px;
+      }
+
+      #files_input_label {
+        margin: 10px;
+        display: flex;
+        align-items:center;
+      }
+
+      input#files {
+        margin: 10px;
+      }
+
+      button#submit {
+        margin: 10px;
+      }
+
+      .form-group.input-group {
+        margin: 10px;
+      }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="form-group input-group">
+          <label id="files_input_label" for="files">Upload a CSV formatted file:</label>
+          <input type="file" id="files"  class="form-control" accept=".csv" required />
+          <button type="submit" id="submit" class="btn btn-primary" onclick="handleFiles();">Submit</button>
+        </div>
+        <div class="form-group">
+         <!-- <button type="submit" id="submit" class="btn btn-primary" onclick="handleFiles();">Submit</button> -->
+       </div>
+     </div>
+
+     <div id="map"></div>
+     <div id="output"></div>
+     <script>
+     var map;
+     var indLatLng = {lat: 20.5937, lng:78.9629};
+     var locations = { xy : [], loc_names : []
+      // xy : [{lat: 19.0760, lng: 72.877}, {lat: 28.7041, lng: 77.1025}, {lat: 12.9716, lng: 77.5946}, {lat: 22.5726, lng: 88.3639},{lat: 19.0167, lng: 72.85}],
+      // loc_names : ["Mumbai", "Delhi", "Bengaluru", "Kolkata", "Dadar"]
+    };
+    var loc_sequence = [];
+
+    function handleFiles() {
+      var files = document.getElementById("files").files[0];
+      if (window.FileReader) {
+        getAsText(files);
+      } else {
+        alert('File Upload not supported by browser.');
+      }
+    }
+
+    function getAsText(fileToRead) {
+      var reader = new FileReader();
+
+      reader.readAsText(fileToRead);
+
+      reader.onload = loadHandler;
+      reader.onerror = errorHandler;
+      
+      window.setTimeout(function() {
+
+        var csv = reader.result;
+
+        var allTextLines = csv.split("\n");
+
+        for (i=0; i<allTextLines.length-1; i++)
+        {
+          var row = allTextLines[i].split(",");
+          var lat_long = {lat: parseFloat(row[0]), lng: parseFloat(row[1])};
+          locations.xy.push(lat_long);
+          var loc_name = row[2];
+          locations.loc_names.push(loc_name);
+        }
+        initMap();
+      },500);
+
+      // initMap();
+    }
+
+    function loadHandler(event) {
+      var csv = event.target.result;
+      initMap(csv);
+    }
+
+    function errorHandler(event) {
+      if (event.target.error.name == 'NotReadableError') {
+        alert('Cannot read file!');
+      };
+    }
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: indLatLng,
+        zoom: 5
+      });
+
+      for (i=0; i<locations.xy.length; i++)
+      {
+        var myLatlng = new google.maps.LatLng(locations.xy[i].lat, locations.xy[i].lng);
+
+        var marker = new google.maps.Marker({
+          position: myLatlng,
+          map: map,
+          title: locations.loc_names[i],
+          animation: google.maps.Animation.DROP
+        });
+      }
+      getDistance(locations);
+    }
+
+    function getDistance(all_locations)
+    {
+      var k = 0;
+         //Find the distance
+         for (i=0; i<=all_locations.xy.length/2; i++)
+         {
+          for (j = i+1; j < all_locations.xy.length; j++)
+          {
+            loc_sequence.push(all_locations.loc_names[i] + " to " + all_locations.loc_names[j]); 
+            var distanceService = new google.maps.DistanceMatrixService();
+            distanceService.getDistanceMatrix({
+              origins: [all_locations.xy[i]],
+              destinations: [all_locations.xy[j]],
+              travelMode: google.maps.TravelMode.DRIVING,
+              unitSystem: google.maps.UnitSystem.METRIC,
+              durationInTraffic: false,
+              avoidHighways: false,
+              avoidTolls: false
+            },
+            function (response, status) {
+              if (status !== google.maps.DistanceMatrixStatus.OK) {
+                console.log('Error:', status);
+              } else  {
+                //console.log(loc_sequence[k] + "- Distance: " + response.rows[0].elements[0].distance.text);
+                document.getElementById("output").innerHTML += loc_sequence[k] + " - Distance: " + response.rows[0].elements[0].distance.text + " | Duration: " + response.rows[0].elements[0].duration.text + '<br/>';
+                k++;
+              }
+            });
+          }
+        }  
+
+      }
+      </script>
+      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDR8VxwvktGHrVusPmbTexG9pxnqFBrFe8"
+      async defer></script>
+    </body>
+    </html>
