@@ -1,0 +1,31 @@
+ html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+      /* Always set the map height explicitly to define the size of the div
+      * element that contains the map. */
+      #map {
+        height: 100%;
+        width: 50%;
+        display: inline-block;
+      }
+      #output {
+        display: inline-block;
+        vertical-align: top;
+        margin: 20px;
+      }
+      #files_input_label {
+        margin: 10px;
+        display: flex;
+        align-items:center;
+      }
+      input#files {
+        margin: 10px;
+      }
+      button#submit {
+        margin: 10px;
+      }
+      .form-group.input-group {
+        margin: 10px;
+      }
